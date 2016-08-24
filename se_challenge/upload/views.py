@@ -6,7 +6,7 @@ from django.shortcuts import render
 from .forms import UploadFileForm
 
 # Imaginary function to handle an uploaded file.
-from somewhere import handle_uploaded_file
+#from somewhere import handle_uploaded_file
 
 def handle_uploaded_file(f):
     with open('data_example888.txt', 'wb+') as destination:
@@ -21,4 +21,4 @@ def upload_file(request):
             return HttpResponseRedirect('/success/url/')
     else:
         form = UploadFileForm()
-    return render(request, 'upload.html', {'form': form})
+    return render(request, 'upload/upload.html', {'form': form})
