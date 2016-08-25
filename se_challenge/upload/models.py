@@ -16,9 +16,9 @@ class Expense(models.Model):
     date = models.DateField()
     category = models.CharField(max_length=30)
     description = models.CharField(max_length=30)
-    pre_tax_amount = models.DecimalField(max_digits=5, decimal_places=2)
+    pre_tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_name = models.CharField(max_length=30) 
-    tax_amount = models.DecimalField(max_digits=5, decimal_places=2)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
 
