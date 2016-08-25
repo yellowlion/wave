@@ -20,5 +20,5 @@ from upload import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^upload$', views.upload_file, name='upload_file'), 
+    url(r'^$', views.upload_file, name='upload')
 ]
