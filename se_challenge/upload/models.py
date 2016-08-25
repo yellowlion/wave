@@ -4,6 +4,7 @@ from django.db import models
 
 # Create your models here.
 
+
 class Employee(models.Model):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
@@ -11,6 +12,10 @@ class Employee(models.Model):
     
     def __str__(self):              # __unicode__ on Python 2
         return "%s %s" % (self.first_name, self.last_name)
+
+
+# Assumptions
+# One-to-Many: One Employee Has Many Expneses, an Expense is not reused between Employees
 
 class Expense(models.Model):
     date = models.DateField()
@@ -20,9 +25,11 @@ class Expense(models.Model):
     tax_name = models.CharField(max_length=30) 
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
-    
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-
+    
+    class Meta:
+        unique_together = (("date", "category", "description"),)
+    
     def __str__(self):              # __unicode__ on Python 2
         #return self.description
         return "%s %s - %s" % (self.date, self.description, self.employee)
