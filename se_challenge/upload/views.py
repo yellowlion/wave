@@ -15,6 +15,7 @@ import csv
 from datetime import date
 
 from django.db.models import Count
+from django.db.models import Sum
 
 def handle_uploaded_file(f):
     
@@ -61,9 +62,15 @@ def handle_uploaded_file(f):
 
             destination.write(chunk)
     """
+class Node:
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+    
             
 def upload_file(request):
     print 'hellow'
+    l = []
     if request.method == 'POST':
         print 1
         form = UploadFileForm(request.POST, request.FILES)
@@ -76,14 +83,55 @@ def upload_file(request):
             print years[0].year
             print years[1].year
             
-            from django.db import connection
-
-            truncate_month = connection.ops.date_trunc_sql('month','day')
-            qs = Expense.objects.extra({'month': truncate_month}).values('month').annotate(Count('pre_tax_amount'))            #print qs
+            a = Node(1,2)
+            b = Node(3,4)
+            
+            
+            l.append(a)
+            l.append(b)
+            
+            """
+query_set = Post.objects.all()
+    years = query_set.dates("pub_date","year")
+    date_hierarchy = {}
+    for year in years:
+        date_hierarchy[year] = {}
+        months = query_set.filter(pub_date__year=year.year).dates("pub_date","month")
+        for month in months:
+            date_hierarchy[year][month] = query_set.filter(pub_date__year=month.year,pub_date__month=month.month).count()            
+            
+            """
+            
+            """
+            
+            Post.objects.raw("SELECT DATE_FORMAT(pub_date, "%Y %M") as pub_date, 
+COUNT(*) as count FROM app_posts GROUP BY pub_date ORDER BY count 
+DESC")
+            from django.db.models.functions import TruncMonth
+            
+            qs = Expense.objects.annotate(month=TruncMonth('date')).values('month').annotate(c=Sum('pre_tax_amount')).values('month', 'c')    
+            
             print qs
+            
+            summary = (Expense.objects.annotate(m=TruncMonth('date')).values('m')) #.annotate(total=Sum('pre_tax_amount')).order_by())
+            print 'summary: ', summary
+            
+            months = query_set.filter(pub_date__year=year.year).dates("pub_date","month")
+            
+            
+            Bike.objects.filter(date__year = 2014).values('paint_color')
+  .annotate(total=Count('paint_color'))
+  .order_by('paint_color'))
+            #from django.db import connection
+
+            #truncate_month = connection.ops.date_trunc_sql('month','day')
+            #qs = Expense.objects.extra({'month': truncate_month}).values('month').annotate(Count('pre_tax_amount'))            #print qs
+            #print qs
             expenses = Expense.objects.all().values()
-            print expenses
-            return HttpResponseRedirect('/success/url/')
+            """
+            
+            #print expenses
+            #return HttpResponseRedirect('/success/url/')
     else:
         form = UploadFileForm()
-    return render(request, 'upload.html', {'form': form})
+    return render(request, 'upload.html', {'form': form, 'll':l})

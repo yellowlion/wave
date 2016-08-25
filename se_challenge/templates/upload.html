@@ -51,7 +51,21 @@
 
  
   
-
+       <!-- List of uploaded documents -->
+        {% if ll %}
+            <ul>
+                {% for l in ll %}
+                     {% if l.a == 1 %}
+                     <p>YEAR</p>
+                     {% endif %}
+                     
+                    <li><a href="{{ l.a }}">{{ l.a }}</a></li>
+                    <li><a href="{{ l.a }}">{{ l.b }}</a></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No documents.</p>
+        {% endif %}
 
         <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.12.0.min.js"><\/script>')</script>

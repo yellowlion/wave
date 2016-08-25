@@ -20,6 +20,7 @@ class Expense(models.Model):
     tax_name = models.CharField(max_length=30) 
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
+    
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
 
     def __str__(self):              # __unicode__ on Python 2
