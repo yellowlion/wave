@@ -28,6 +28,18 @@ def handle_uploaded_file(f):
         # do stuff with each row...
         
         # expense part
+        """
+>>> import hashlib
+>>> m = hashlib.md5()
+>>> m.update("Nobody inspects")
+>>> m.update(" the spammish repetition")
+>>> m.digest()
+'\xbbd\x9c\x83\xdd\x1e\xa5\xc9\xd9\xde\xc9\xa1\x8d\xf0\xff\xe9'
+>>> m.digest_size
+16
+>>> m.block_size        
+        
+        """
         expense_date = row[0].split('/')
         year = int(expense_date[2])
         month = int(expense_date[0])

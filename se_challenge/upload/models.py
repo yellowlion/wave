@@ -9,6 +9,9 @@ class Employee(models.Model):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     address = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = (("first_name", "last_name", "address"),)
     
     def __str__(self):              # __unicode__ on Python 2
         return "%s %s" % (self.first_name, self.last_name)
@@ -27,8 +30,7 @@ class Expense(models.Model):
     
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     
-    class Meta:
-        unique_together = (("date", "category", "description"),)
+    unique_together = (("date", "category", "description"),)
     
     def __str__(self):              # __unicode__ on Python 2
         #return self.description
