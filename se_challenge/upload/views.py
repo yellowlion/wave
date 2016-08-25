@@ -57,12 +57,16 @@ def handle_uploaded_file(f):
         last_name = employee_name[1]
         address = row[3]
             
-        employee_obj, created = Employee.objects.update_or_create(first_name=first_name, last_name=last_name, address=address)
+            
+        # TODO: https://docs.djangoproject.com/en/1.10/topics/db/examples/many_to_one/
+            
+        employee_obj, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
         
         expense_obj = Expense(date=date(year, month, day), category=category, description=description, 
                                 pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, 
                                 employee=employee_obj)
         expense_obj.save()
+
         
                     
     """
