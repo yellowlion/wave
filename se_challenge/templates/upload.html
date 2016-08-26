@@ -10,23 +10,23 @@
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <!-- Place favicon.ico in the root directory -->
 
-<style>
-table {
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
-    width: 50%;
-}
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 16%;
+        }
 
-td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
-}
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
 
-tr:nth-child(even) {
-    background-color: #dddddd;
-}
-</style>
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
         
         <!-- Latest compiled and minified CSS -->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -44,7 +44,8 @@ tr:nth-child(even) {
         <![endif]-->
 
         <!-- Add your site or application content here -->
-        <p>Hello world! This is HTML5 Boilerplate.</p>
+        <h1>Wave Software Development Challenge</h1>        
+        
 
 
 
@@ -63,12 +64,19 @@ tr:nth-child(even) {
         </div>
                 
         <hr>
+        <h3>Expense Report</h3>
+        <hr>
        <!-- Total expenses amount by month for each year -->
         {% if ll %}
             <div style="padding-left:50px">
                 {% for l in ll %}
                      <h4>{{l.year}}</h4>
                      <table>
+                        <tr>
+                            <th>Month</th>
+                            <th>Total amount</th>
+                        </tr>
+                         
                      {% for i in l.data %}
                         
                           <tr>
@@ -82,12 +90,6 @@ tr:nth-child(even) {
                      {% endfor %}
                      </table>
 
-                     {% if l.a == 1 %}
-                     <p>YEAR</p>
-                     {% endif %}
-                     
-                    <li><a href="{{ l.a }}">{{ l.a }}</a></li>
-                    <li><a href="{{ l.a }}">{{ l.b }}</a></li>
                 {% endfor %}
             </div>
         {% else %}

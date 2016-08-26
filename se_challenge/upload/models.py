@@ -17,13 +17,15 @@ class Employee(models.Model):
 # Assumptions
 # One-to-Many: One Employee Has Many Expneses, an Expense is not reused between Employees
 
-class Expense(models.Model):
+class ExpenseItem(models.Model):
     date = models.DateField()
     category = models.CharField(max_length=30)
     description = models.CharField(max_length=30)
-    pre_tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    tax_name = models.CharField(max_length=30) 
-    tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_name = models.CharField(max_length=30)
+    
+    pre_tax_amount = models.IntegerField()
+    tax_amount = models.IntegerField()
+    total_amount = models.IntegerField()
     
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     

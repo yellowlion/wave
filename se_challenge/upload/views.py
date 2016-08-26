@@ -7,7 +7,7 @@ from .forms import UploadFileForm
 
 
 from .models import Employee
-from .models import Expense
+from .models import ExpenseItem
 
 # Imaginary function to handle an uploaded file.
 #from somewhere import handle_uploaded_file
@@ -16,6 +16,8 @@ from datetime import date
 
 from django.db.models import Count
 from django.db.models import F, FloatField, Sum
+
+import calendar
 
 def handle_uploaded_file(f):
     
@@ -40,6 +42,7 @@ def handle_uploaded_file(f):
 >>> m.block_size        
         
         """
+        row = [i.strip() for i in row]
         
         # expense part
         expense_date = row[0].split('/')
@@ -49,9 +52,14 @@ def handle_uploaded_file(f):
         
         category = row[1]
         description = row[4]
-        pre_tax_amount = float(row[5].replace(',', ''))
+        pre_tax_amount = int(float(row[5].replace(',', '')) * 100)
         tax_name = row[6]
-        tax_amount = float(row[7].replace(',', ''))
+        tax_amount = int(float(row[7].replace(',', '')) * 100)
+        total_amount = int(pre_tax_amount + tax_amount)
+        
+        print 'pre_tax_amount: ', pre_tax_amount
+        print 'tax_amount: ', tax_amount
+        print 'total_amount: ', total_amount
         
         # employee part
         employee_name = [i.strip() for i in row[2].split()]
@@ -59,14 +67,15 @@ def handle_uploaded_file(f):
         last_name = employee_name[1]
         address = row[3]
             
-        employee, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
+        employee, created = Employee.objects.update_or_create(first_name=first_name, last_name=last_name, address=address)
         
-        # Add this expense to this employee's expense set, i.e. One-to-Many
-        # Assumption: expenses are unique
-        employee.expense_set.create(date=date(year, month, day), category=category, description=description, 
-                                pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount)
+        expense, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
+                                pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, total_amount=total_amount, employee=employee)
+                                
+        if created:
+            print employee_name
+            print expense
 
-        #print employee.expense_set()                   
         """
         with open('88888.txt', 'wb') as destination:
             for chunk in f.chunks():
@@ -89,83 +98,33 @@ def upload_file(request):
         if form.is_valid():
             handle_uploaded_file(request.FILES['file'])
             
-            query_set = Expense.objects.all()
-            print query_set
-            print 'len qs: ', len(query_set)
+            query_set = ExpenseItem.objects.all()
+            #print query_set
+            #print 'len qs: ', len(query_set)
             years = query_set.dates('date','year')          
             for year in years:
                 year_dict = {}
-                #print 'year.year: ', year.year
+                print 'year.year: ', year.year
                 year_dict['year'] = year.year
                 month_data = []
                 month_dict = {}
                 #month_dict[]
                 
                 months = query_set.filter(date__year=year.year).dates('date','month')
-                print 'months: ', months
+                #print 'months: ', months
                 #print 'qs : ', query_set
                 for month in months:
-                    a = query_set.filter(date__year=year.year).filter(date__month=month.month)#.aggregate(total_expenses_amount=Sum(F('pre_tax_amount'), output_field=FloatField()))
-                    #print '====> a', a
+                    a = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
+                    b = "%0.2f" % (a['total_expenses_amount']/100)
+                    print 'Month: Total', calendar.month_name[month.month], b
                     
 
             
-            """
-            years = Expense.objects.dates('date','year')    
-            print years[0].year
-            print years[1].year
-            
-            a = Node(1,2)
-            b = Node(3,4)
-            
-            
-            l.append(a)
-            l.append(b)
-            """
-            """
-query_set = Post.objects.all()
-    years = query_set.dates("pub_date","year")
-    date_hierarchy = {}
-    for year in years:
-        date_hierarchy[year] = {}
-        months = query_set.filter(pub_date__year=year.year).dates("pub_date","month")
-        for month in months:
-            date_hierarchy[year][month] = query_set.filter(pub_date__year=month.year,pub_date__month=month.month).count()            
-            
-            """
-            
-            """
-            
-            Post.objects.raw("SELECT DATE_FORMAT(pub_date, "%Y %M") as pub_date, 
-COUNT(*) as count FROM app_posts GROUP BY pub_date ORDER BY count 
-DESC")
-            from django.db.models.functions import TruncMonth
-            
-            qs = Expense.objects.annotate(month=TruncMonth('date')).values('month').annotate(c=Sum('pre_tax_amount')).values('month', 'c')    
-            
-            print qs
-            
-            summary = (Expense.objects.annotate(m=TruncMonth('date')).values('m')) #.annotate(total=Sum('pre_tax_amount')).order_by())
-            print 'summary: ', summary
-            
-            months = query_set.filter(pub_date__year=year.year).dates("pub_date","month")
-            
-            
-            Bike.objects.filter(date__year = 2014).values('paint_color')
-  .annotate(total=Count('paint_color'))
-  .order_by('paint_color'))
-            #from django.db import connection
-
-            #truncate_month = connection.ops.date_trunc_sql('month','day')
-            #qs = Expense.objects.extra({'month': truncate_month}).values('month').annotate(Count('pre_tax_amount'))            #print qs
-            #print qs
-            expenses = Expense.objects.all().values()
-            """
-            
-            #print expenses
-            #return HttpResponseRedirect('/success/url/')
+ 
     else:
         form = UploadFileForm()
         
     l = [{'year':1998, 'data':[{'month':'January', 'sum':3.99}]}, {'year':2005, 'data':[{'month':'January', 'sum':53.99}]}, {'year':2010, 'data':[{'month':'FJanuary', 'sum':3.99}]}]
+    
+    
     return render(request, 'upload.html', {'form': form, 'll':l})
