@@ -15,7 +15,7 @@ import csv
 from datetime import date
 
 from django.db.models import Count
-from django.db.models import Sum
+from django.db.models import F, FloatField, Sum
 
 def handle_uploaded_file(f):
     
@@ -40,6 +40,8 @@ def handle_uploaded_file(f):
 >>> m.block_size        
         
         """
+        
+        # expense part
         expense_date = row[0].split('/')
         year = int(expense_date[2])
         month = int(expense_date[0])
@@ -57,27 +59,23 @@ def handle_uploaded_file(f):
         last_name = employee_name[1]
         address = row[3]
             
-            
-        # TODO: https://docs.djangoproject.com/en/1.10/topics/db/examples/many_to_one/
-            
-        employee_obj, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
+        employee, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
         
-        expense_obj = Expense(date=date(year, month, day), category=category, description=description, 
-                                pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, 
-                                employee=employee_obj)
-        expense_obj.save()
+        # Add this expense to this employee's expense set, i.e. One-to-Many
+        # Assumption: expenses are unique
+        employee.expense_set.create(date=date(year, month, day), category=category, description=description, 
+                                pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount)
 
-        
-                    
-    """
-    with open('88888.txt', 'wb') as destination:
-        for chunk in f.chunks():
-            print '===================================='
-            print chunk
-            print '===================================='
+        #print employee.expense_set()                   
+        """
+        with open('88888.txt', 'wb') as destination:
+            for chunk in f.chunks():
+                print '===================================='
+                print chunk
+                print '===================================='
 
-            destination.write(chunk)
-    """
+                destination.write(chunk)
+        """
 class Node:
     def __init__(self, a, b):
         self.a = a
@@ -85,16 +83,34 @@ class Node:
     
             
 def upload_file(request):
-    print 'hellow'
-    l = []
+    data = []
     if request.method == 'POST':
-        print 1
         form = UploadFileForm(request.POST, request.FILES)
-        print 2
         if form.is_valid():
-            print 3
-            print request.FILES['file']
             handle_uploaded_file(request.FILES['file'])
+            
+            query_set = Expense.objects.all()
+            print query_set
+            print 'len qs: ', len(query_set)
+            years = query_set.dates('date','year')          
+            for year in years:
+                year_dict = {}
+                #print 'year.year: ', year.year
+                year_dict['year'] = year.year
+                month_data = []
+                month_dict = {}
+                #month_dict[]
+                
+                months = query_set.filter(date__year=year.year).dates('date','month')
+                print 'months: ', months
+                #print 'qs : ', query_set
+                for month in months:
+                    a = query_set.filter(date__year=year.year).filter(date__month=month.month)#.aggregate(total_expenses_amount=Sum(F('pre_tax_amount'), output_field=FloatField()))
+                    #print '====> a', a
+                    
+
+            
+            """
             years = Expense.objects.dates('date','year')    
             print years[0].year
             print years[1].year
@@ -105,7 +121,7 @@ def upload_file(request):
             
             l.append(a)
             l.append(b)
-            
+            """
             """
 query_set = Post.objects.all()
     years = query_set.dates("pub_date","year")
@@ -150,4 +166,6 @@ DESC")
             #return HttpResponseRedirect('/success/url/')
     else:
         form = UploadFileForm()
+        
+    l = [{'year':1998, 'data':[{'month':'January', 'sum':3.99}]}, {'year':2005, 'data':[{'month':'January', 'sum':53.99}]}, {'year':2010, 'data':[{'month':'FJanuary', 'sum':3.99}]}]
     return render(request, 'upload.html', {'form': form, 'll':l})
