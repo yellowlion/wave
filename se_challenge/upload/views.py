@@ -92,39 +92,50 @@ class Node:
     
             
 def upload_file(request):
+    l = []
+    
     data = []
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             handle_uploaded_file(request.FILES['file'])
             
+            # hit the database once
             query_set = ExpenseItem.objects.all()
-            #print query_set
-            #print 'len qs: ', len(query_set)
-            years = query_set.dates('date','year')          
+            
+            # get all distinct years
+            years = query_set.dates('date','year')
+            print 'years: ', years
             for year in years:
                 year_dict = {}
-                print 'year.year: ', year.year
+                
                 year_dict['year'] = year.year
-                month_data = []
-                month_dict = {}
+                
+                
+                month_list = []
+                
+                
                 #month_dict[]
                 
                 months = query_set.filter(date__year=year.year).dates('date','month')
                 #print 'months: ', months
                 #print 'qs : ', query_set
                 for month in months:
-                    a = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
-                    b = "%0.2f" % (a['total_expenses_amount']/100)
-                    print 'Month: Total', calendar.month_name[month.month], b
+                    month_dict = {}
+                    month_dict['month'] = calendar.month_name[month.month]
+                    result = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
+                    #b = "%0.2f" % (a['total_expenses_amount']/100)
+                    month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100)
+                    #print 'Month: Total', calendar.month_name[month.month], b
+                    month_list.append(month_dict)
                     
-
-            
- 
+                year_dict['month_list'] = month_list
+                 
+                l.append(year_dict)   
     else:
         form = UploadFileForm()
-        
-    l = [{'year':1998, 'data':[{'month':'January', 'sum':3.99}]}, {'year':2005, 'data':[{'month':'January', 'sum':53.99}]}, {'year':2010, 'data':[{'month':'FJanuary', 'sum':3.99}]}]
+    print 'l: ', l
+    #l = [{'year':1998, 'data':[{'month':'January', 'sum':3.99}]}, {'year':2005, 'data':[{'month':'January', 'sum':53.99}]}, {'year':2010, 'data':[{'month':'FJanuary', 'sum':3.99}]}]
     
     
     return render(request, 'upload.html', {'form': form, 'll':l})

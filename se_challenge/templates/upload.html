@@ -70,25 +70,22 @@
         {% if ll %}
             <div style="padding-left:50px">
                 {% for l in ll %}
-                     <h4>{{l.year}}</h4>
+                
+                     <h4>Year: {{l.year}}</h4>
                      <table>
                         <tr>
                             <th>Month</th>
                             <th>Total amount</th>
                         </tr>
                          
-                     {% for i in l.data %}
-                        
+                     {% for i in l.month_list %}
                           <tr>
-                            <td>Laughing Bacchus Winecellars</td>
-                            <td>Yoshi Tannamuri</td>
-                          </tr>
-                          <tr>
-                            <td>Magazzini Alimentari Riuniti</td>
-                            <td>Giovanni Rovelli</td>
+                            <td>{{i.month}}</td>
+                            <td>${{i.total}}</td>
                           </tr>
                      {% endfor %}
                      </table>
+                     <br>
 
                 {% endfor %}
             </div>
