@@ -1,4 +1,5 @@
-
+# Ian Carreon, iancrrn@gmail.com
+# August 27, 2016
 
 # Create your views here.
 from django.http import HttpResponseRedirect
@@ -9,8 +10,6 @@ from .forms import UploadFileForm
 from .models import Employee
 from .models import ExpenseItem
 
-# Imaginary function to handle an uploaded file.
-#from somewhere import handle_uploaded_file
 import csv
 from datetime import date
 
@@ -19,7 +18,19 @@ from django.db.models import F, FloatField, Sum
 
 import calendar
 
+# helper function
+# Option: place this function is some file and do something like
+# from somefile import handle_uploaded_file
 def handle_uploaded_file(f):
+    
+    """
+        # for large files e.g. ~ 2GB may be we could chunk the file
+        for chunk in f.chunks():
+            do_something_with_the(chunk)
+    """
+    """
+    How to handle long running asyncronous tasks: threading/multiprocessing, Celery/Redis, AWS SQS...
+    """
     
     csvreader = csv.reader(f)
 
@@ -29,113 +40,93 @@ def handle_uploaded_file(f):
     for row in csvreader:
         # do stuff with each row...
         
-        # expense part
-        """
->>> import hashlib
->>> m = hashlib.md5()
->>> m.update("Nobody inspects")
->>> m.update(" the spammish repetition")
->>> m.digest()
-'\xbbd\x9c\x83\xdd\x1e\xa5\xc9\xd9\xde\xc9\xa1\x8d\xf0\xff\xe9'
->>> m.digest_size
-16
->>> m.block_size        
-        
-        """
+        # remove any whitespace
         row = [i.strip() for i in row]
         
-        # expense part
-        expense_date = row[0].split('/')
+        # Extract the expense item part
+        expense_date = row[0].split('/') # extract year, month, day
         year = int(expense_date[2])
         month = int(expense_date[0])
         day = int(expense_date[1])
         
         category = row[1]
         description = row[4]
+        
+        # work with integers - avoid issues working with floats
+        # convert to cents (i.e. multiply by 100)
         pre_tax_amount = int(float(row[5].replace(',', '')) * 100)
         tax_name = row[6]
         tax_amount = int(float(row[7].replace(',', '')) * 100)
         total_amount = int(pre_tax_amount + tax_amount)
-        
-        print 'pre_tax_amount: ', pre_tax_amount
-        print 'tax_amount: ', tax_amount
-        print 'total_amount: ', total_amount
-        
-        # employee part
+                
+        # Extract employee part
         employee_name = [i.strip() for i in row[2].split()]
         first_name = employee_name[0]
         last_name = employee_name[1]
         address = row[3]
-            
+
+        # get_or_create versus update_or_create, maybe employee changed address...            
         employee, created = Employee.objects.update_or_create(first_name=first_name, last_name=last_name, address=address)
         
-        expense, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
+        expense_item, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
                                 pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, total_amount=total_amount, employee=employee)
                                 
-        if created:
-            print employee_name
-            print expense
 
-        """
-        with open('88888.txt', 'wb') as destination:
-            for chunk in f.chunks():
-                print '===================================='
-                print chunk
-                print '===================================='
-
-                destination.write(chunk)
-        """
-class Node:
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
-    
-            
 def upload_file(request):
-    l = []
     
+    # used for the data to return to the template
     data = []
+    
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            handle_uploaded_file(request.FILES['file'])
+            
+            try:
+                handle_uploaded_file(request.FILES['file'])
+            except: # catch all
+                error_msg = "Fail: some error occurred loading the CSV file. Please choose another file." 
+                return render(request, 'upload.html', {'form': form, 'data':data, 'error_msg':error_msg})
+                
+        
+            # This section builds the data to return to the template as a list of 'JSON' style/dicts objects
+            """
+            E.g. something like
+            data = [{'year':1998, 'month_list':[{'month':'January', 'total':2.89}]}, 
+                    {'year':2005, 'month_list':[{'month':'October', 'total':53.99}]}, 
+                    {'year':2010, 'month_list':[{'month':'March', 'total':3.99}]}]
+            """
             
             # hit the database once
             query_set = ExpenseItem.objects.all()
             
             # get all distinct years
             years = query_set.dates('date','year')
-            print 'years: ', years
+            
+            # option to sort years ASC or DESC...
+            
+            # Group by year
             for year in years:
                 year_dict = {}
                 
                 year_dict['year'] = year.year
                 
-                
                 month_list = []
                 
-                
-                #month_dict[]
-                
+                # Get the months for this year
                 months = query_set.filter(date__year=year.year).dates('date','month')
-                #print 'months: ', months
-                #print 'qs : ', query_set
                 for month in months:
                     month_dict = {}
                     month_dict['month'] = calendar.month_name[month.month]
                     result = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
-                    #b = "%0.2f" % (a['total_expenses_amount']/100)
-                    month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100)
-                    #print 'Month: Total', calendar.month_name[month.month], b
+                    
+                    month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100) # divid by 100 -> dollar and cents format
+                    
                     month_list.append(month_dict)
                     
                 year_dict['month_list'] = month_list
                  
-                l.append(year_dict)   
+                data.append(year_dict)   
     else:
         form = UploadFileForm()
-    print 'l: ', l
-    #l = [{'year':1998, 'data':[{'month':'January', 'sum':3.99}]}, {'year':2005, 'data':[{'month':'January', 'sum':53.99}]}, {'year':2010, 'data':[{'month':'FJanuary', 'sum':3.99}]}]
-    
-    
-    return render(request, 'upload.html', {'form': form, 'll':l})
+        
+    return render(request, 'upload.html', {'form': form, 'data':data, 'error_msg':None})
