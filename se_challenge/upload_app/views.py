@@ -64,10 +64,11 @@ def handle_uploaded_file(f):
         first_name = employee_name[0]
         last_name = employee_name[1]
         address = row[3]
-
-        # get_or_create versus update_or_create, maybe employee changed address...            
-        employee, created = Employee.objects.update_or_create(first_name=first_name, last_name=last_name, address=address)
         
+        # if employee already in the databaase then use that otherwise create a new entry
+        employee, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
+
+        # if this expense item is already assigned to this employee then do nothing else create a new expense item for this employee
         expense_item, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
                                 pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, total_amount=total_amount, employee=employee)
                                 
@@ -83,9 +84,12 @@ def upload_file(request):
             
             try:
                 handle_uploaded_file(request.FILES['file'])
-            except: # catch all
-                error_msg = "Fail: some error occurred loading the CSV file. Please choose another file." 
-                return render(request, 'upload.html', {'form': form, 'data':data, 'error_msg':error_msg})
+            # catch all for now
+            # but depending on the error we can bow out gracefully or continue
+            # i.e if exception is an IntegrityError then continue...
+            # i.e if list index out of range error then stop - possibly invalid CSV file
+            except Exception as e: 
+                return render(request, 'upload.html', {'form': form, 'data':data, 'error_msg':e})
                 
         
             # This section builds the data to return to the template as a list of 'JSON' style/dicts objects
@@ -119,7 +123,7 @@ def upload_file(request):
                     month_dict['month'] = calendar.month_name[month.month]
                     result = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
                     
-                    month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100) # divid by 100 -> dollar and cents format
+                    month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100) # divide by 100 -> dollar and cents format
                     
                     month_list.append(month_dict)
                     

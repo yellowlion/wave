@@ -17,7 +17,7 @@ class Employee(models.Model):
     # we probably don't need this constraint if we had some unique field to identify each employee
     # such as an email address
     class Meta:
-        unique_together = ("first_name", "last_name")
+        unique_together = ("first_name", "last_name", "address") # add address since we can have 2 John Smiths living at different addresses
                 
 
 # Assumptions
@@ -43,7 +43,8 @@ class ExpenseItem(models.Model):
     
     employee = models.ForeignKey(Employee) #, on_delete=models.CASCADE)
     
+    # Ensure no duplicates
     class Meta:
-        unique_together = ("date", "category", "description")
+        unique_together = ("date", "category", "description", "tax_name", "pre_tax_amount", "tax_amount", "total_amount", "employee")
     
 
