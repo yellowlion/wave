@@ -119,12 +119,16 @@ def upload_file(request):
                 # Get the months for this year
                 months = query_set.filter(date__year=year.year).dates('date','month')
                 for month in months:
+                    
                     month_dict = {}
+                    
+                    # build each month dict
                     month_dict['month'] = calendar.month_name[month.month]
                     result = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
                     
                     month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100) # divide by 100 -> dollar and cents format
                     
+                    # then add month dict to month list
                     month_list.append(month_dict)
                     
                 year_dict['month_list'] = month_list
