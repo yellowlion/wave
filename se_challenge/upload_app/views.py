@@ -17,6 +17,8 @@ from .forms import UploadFileForm
 from .models import *
 
 import csv
+import StringIO
+
 from datetime import date
 
 from django.db.models import Count
@@ -24,114 +26,68 @@ from django.db.models import F, FloatField, Sum
 
 import calendar
 
-# helper function
-# Option: place this function is some file and do something like
-# from somefile import handle_uploaded_file
 def handle_uploaded_file(f):
-    """
-    http://stackoverflow.com/questions/3305926/python-csv-string-to-array
-up vote
-108
-down vote
-accepted
-I would use StringIO:
 
-import StringIO
-import csv
-
-f = StringIO.StringIO(scsv)
-reader = csv.reader(f, delimiter=',')
-for row in reader:
-    print '\t'.join(row)
-simplier version with split() on newlines:
-
-reader = csv.reader(scsv.split('\n'), delimiter=',')
-for row in reader:
-    print '\t'.join(row)
-Or you can simply split this string into lines using \n as separator, and then split each line into values, but this way you must be aware of quoting, so using csv module is preferred.    
-  """
-    
-    """
-    
-    
-    """
-        # for large files e.g. ~ 2GB may be we could chunk the file
-        for chunk in f.chunks():
-            do_something_with_the(chunk)
-    """
-    """
-    How to handle long running asyncronous tasks: threading/multiprocessing, Celery/Redis, AWS SQS...
-    """
-    print 'f: ', f
-    
+    # http://stackoverflow.com/questions/3305926/python-csv-string-to-array
+    header_read = False
     
     for chunk in f.chunks():
-        print 'chunk: ', chunk
-        print 'type:  ', type(chunk)
-        csvreader = csv.reader(chunk)
+        
+        f = StringIO.StringIO(chunk)
+        csvreader = csv.reader(f)
 
         # This skips the first row (i.e. header) of the CSV file.
-        next(csvreader)
+        if not header_read:
+            next(csvreader)
+            header_read = True
 
         for row in csvreader:
             # do stuff with each row...
+            
+            # remove any whitespace
             #print 'row: ', row
             
-            0/0
-        #destination.write(chunk)    
+            row = [i.strip() for i in row]
 
-    csvreader = csv.reader(f)
+            print 'row: ', row
+            
 
-    # This skips the first row (i.e. header) of the CSV file.
-    next(csvreader)
-
-    for row in csvreader:
-        # do stuff with each row...
+            # Extract the expense item part
+            expense_date = row[0].split('/') # extract year, month, day
+            year = int(expense_date[2])
+            month = int(expense_date[0])
+            day = int(expense_date[1])
+            
+            category = row[1]
+            description = row[4]
+            
+            # work with integers - avoid issues working with floats
+            # convert to cents (i.e. multiply by 100)
+            pre_tax_amount = int(float(row[5].replace(',', '')) * 100)
+            tax_name = row[6]
+            tax_amount = int(float(row[7].replace(',', '')) * 100)
+            total_amount = int(pre_tax_amount + tax_amount)
+                    
+            # Extract employee part
+            employee_name = [i.strip() for i in row[2].split()]
+            first_name = employee_name[0]
+            last_name = employee_name[1]
+            
+            
+            # break up address into street, city, state and zipcode
+            # e.g. 1600 Amphitheatre Parkway, Mountain View, CA 94043
+            address = row[3].split(',')
+            
+            street = address[0].strip()
+            city = address[1].strip()
+            state_and_zipcode = address[2].strip()
+            
+            temp = state_and_zipcode.split(' ')
+            state = temp[0].strip()
+            zipcode = temp[1].strip()
         
-        # remove any whitespace
-        print 'row: ', row
-        
-        row = [i.strip() for i in row]
-
-        print 'row: ', row
-        0/0
-
-        # Extract the expense item part
-        expense_date = row[0].split('/') # extract year, month, day
-        year = int(expense_date[2])
-        month = int(expense_date[0])
-        day = int(expense_date[1])
-        
-        category = row[1]
-        description = row[4]
-        
-        # work with integers - avoid issues working with floats
-        # convert to cents (i.e. multiply by 100)
-        pre_tax_amount = int(float(row[5].replace(',', '')) * 100)
-        tax_name = row[6]
-        tax_amount = int(float(row[7].replace(',', '')) * 100)
-        total_amount = int(pre_tax_amount + tax_amount)
-                
-        # Extract employee part
-        employee_name = [i.strip() for i in row[2].split()]
-        first_name = employee_name[0]
-        last_name = employee_name[1]
-        
-        
-        # break up address into street, city, state and zipcode
-        # e.g. 1600 Amphitheatre Parkway, Mountain View, CA 94043
-        address = row[3].split(',')
-        
-        street = address[0].strip()
-        city = address[1].strip()
-        state_and_zipcode = address[2].strip()
-        
-        temp = state_and_zipcode.split(' ')
-        state = temp[0].strip()
-        zipcode = temp[1].strip()
-        
-        
-        """
+            
+"""        
 class Employee(models.Model):
     
     first_name = models.CharField(max_length=30)
@@ -172,17 +128,18 @@ class Hobby(models.Model):
     employee = models.ForeignKey(Employee) #, on_delete=models.CASCADE)
         
         
-        """
         
         
-        # if employee already in the database then use that otherwise create a new entry
-        employee, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
+        
+            # if employee already in the database then use that otherwise create a new entry
+            employee, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
 
-        # if this expense item is already assigned to this employee then do nothing else create a new expense item for this employee
-        expense_item, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
-                                pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, total_amount=total_amount, employee=employee)
+            # if this expense item is already assigned to this employee then do nothing else create a new expense item for this employee
+            expense_item, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
+                                    pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, total_amount=total_amount, employee=employee)
                                 
-
+            """
+            
 def upload_file(request):
     
     # used for the data to return to the template
@@ -211,7 +168,7 @@ def upload_file(request):
             """
             
             # hit the database once
-            query_set = ExpenseItem.objects.all()
+            query_set = Expense.objects.all()
             
             # get all distinct years
             years = query_set.dates('date','year')
