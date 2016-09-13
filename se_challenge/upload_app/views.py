@@ -59,6 +59,7 @@ def handle_uploaded_file(f):
             day = int(expense_date[1])
             
             category = row[1]
+            print 'category: ', category
             description = row[4]
             
             # work with integers - avoid issues working with floats
@@ -73,7 +74,6 @@ def handle_uploaded_file(f):
             first_name = employee_name[0]
             last_name = employee_name[1]
             
-            
             # break up address into street, city, state and zipcode
             # e.g. 1600 Amphitheatre Parkway, Mountain View, CA 94043
             address = row[3].split(',')
@@ -86,59 +86,14 @@ def handle_uploaded_file(f):
             state = temp[0].strip()
             zipcode = temp[1].strip()
         
+            zipcode_obj, created = ZipCode.objects.get_or_create(zipcode=zipcode, city=city, state=state)
+            employee_obj, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, street=street, zipcode=zipcode_obj)
+            category_obj, created = Category.objects.get_or_create(name=category)
+            taxname_obj, created = TaxName.objects.get_or_create(tax_name=tax_name)
+            expense_obj, created = Expense.objects.get_or_create(date=date(year, month, day), category=category_obj, description=description, 
+                                    pre_tax_amount=pre_tax_amount, tax_name=taxname_obj, tax_amount=tax_amount, total_amount=total_amount, employee=employee_obj)
             
-"""        
-class Employee(models.Model):
-    
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    street = models.CharField(max_length=90)
-    zipcode = models.ForeignKey('ZipCode')
 
-    class Meta:
-        unique_together = ("first_name", "last_name", "street")
-                
-class ZipCode(models.Model):
-    zipcode = models.CharField(max_length=10, primary_key = True) # Make this the PK since zipcodes are unique
-    city = models.CharField(max_length=30)
-    state = models.CharField(max_length=30)
-    
-class TaxName(models.Model):
-    tax_name = models.CharField(max_length=30)
-
-class Category(models.Model):
-    name = models.CharField(max_length=30)
-    
-class Expense(models.Model):
-    date = models.DateField()    
-    description = models.CharField(max_length=90)
-    
-    pre_tax_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    
-    tax_name = models.ForeignKey(TaxName)
-    category = models.ForeignKey(Category)
-    employee = models.ForeignKey(Employee) #, on_delete=models.CASCADE)
-    
-    class Meta:
-        unique_together = ("date", "category", "description", "pre_tax_amount", "employee")
-    
-class Hobby(models.Model):
-    employee = models.ForeignKey(Employee) #, on_delete=models.CASCADE)
-        
-        
-        
-        
-        
-            # if employee already in the database then use that otherwise create a new entry
-            employee, created = Employee.objects.get_or_create(first_name=first_name, last_name=last_name, address=address)
-
-            # if this expense item is already assigned to this employee then do nothing else create a new expense item for this employee
-            expense_item, created = ExpenseItem.objects.get_or_create(date=date(year, month, day), category=category, description=description, 
-                                    pre_tax_amount=pre_tax_amount, tax_name=tax_name, tax_amount=tax_amount, total_amount=total_amount, employee=employee)
-                                
-            """
             
 def upload_file(request):
     
@@ -191,7 +146,7 @@ def upload_file(request):
                     
                     # build each month dict
                     month_dict['month'] = calendar.month_name[month.month]
-                    result = query_set.filter(date__year=year.year).filter(date__month=month.month).aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
+                    result = query_set.filter(date__year=year.year).filter(date__month=month.month).filter(category__name='Travel').aggregate(total_expenses_amount=Sum(F('total_amount'), output_field=FloatField()))
                     
                     month_dict['total'] = '%0.2f' % (result['total_expenses_amount']/100) # divide by 100 -> dollar and cents format
                     
