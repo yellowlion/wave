@@ -37,11 +37,12 @@ class Expense(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     
     tax_name = models.ForeignKey(TaxName)
-    category = models.ForeignKey(Category)
+    #category = models.ForeignKey(Category)
+    categories = models.ManyToManyField(Category)
     employee = models.ForeignKey(Employee) #, on_delete=models.CASCADE)
     
     class Meta:
-        unique_together = ("date", "category", "description", "pre_tax_amount", "employee")
+        unique_together = ("date", "description", "pre_tax_amount", "employee")
     
 class Hobby(models.Model):
     employee = models.ForeignKey(Employee) #, on_delete=models.CASCADE)
